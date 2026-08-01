@@ -32,50 +32,53 @@ with st.sidebar:
         """
         <style>
         [data-testid="stSidebar"] {
-            background: #f8f9fb;
-            border-right: 1px solid #e6e8ee;
+            background: #ffffff;
+            border-right: 1px solid #ececef;
         }
         [data-testid="stSidebar"] > div:first-child {
-            padding-top: 1.25rem;
+            padding-top: 1.5rem;
+        }
+        [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] {
+            background: #fafafb;
+            border: 1px solid #ebebee;
+            border-radius: 10px;
+        }
+        [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] > div {
+            padding: 0.75rem 0.9rem;
         }
         .sidebar-brand {
-            font-size: 1.05rem;
-            font-weight: 700;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
             color: #111827;
-            letter-spacing: -0.01em;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .sidebar-brand-dot {
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
-            background: #2563eb;
-            display: inline-block;
         }
         .sidebar-sub {
-            font-size: 0.8rem;
-            color: #6b7280;
-            margin-top: 0.2rem;
+            font-size: 0.72rem;
+            color: #9ca3af;
+            margin-top: 0.15rem;
+            margin-bottom: 0.4rem;
         }
-        .filtro-label {
-            font-size: 0.7rem;
+        .card-title {
+            font-size: 0.66rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #9ca3af;
-            margin: 1.1rem 0 0.35rem 0;
+            letter-spacing: 0.1em;
+            color: #6b7280;
+            margin-bottom: 0.35rem;
         }
         [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             font-weight: 500;
             color: #374151;
         }
         [data-testid="stSidebar"] [data-testid="stDateInput"] input,
         [data-testid="stSidebar"] [data-testid="stMultiSelect"] [data-baseweb="select"] {
-            border-radius: 6px;
-            border-color: #d1d5db;
+            border-radius: 7px;
+            border-color: #e3e3e8;
+        }
+        [data-testid="stSidebar"] .sidebar-count {
+            font-size: 0.75rem;
+            color: #6b7280;
         }
         </style>
         """,
@@ -83,29 +86,29 @@ with st.sidebar:
     )
 
     st.markdown(
-        '<div class="sidebar-brand"><span class="sidebar-brand-dot"></span>Reporte de Pedidos</div>',
+        '<div class="sidebar-brand">Reporte de Pedidos</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="sidebar-sub">Bodega Murano &middot; Filtros del reporte</div>',
+        '<div class="sidebar-sub">Bodega Murano</div>',
         unsafe_allow_html=True,
     )
-    st.divider()
 
-    def filtro_label(texto: str) -> None:
-        st.markdown(f'<div class="filtro-label">{texto}</div>', unsafe_allow_html=True)
+    def card_title(texto: str) -> None:
+        st.markdown(f'<div class="card-title">{texto}</div>', unsafe_allow_html=True)
 
     if "Fecha" in registros.columns and registros["Fecha"].notna().any():
-        filtro_label("Periodo")
         min_date = registros["Fecha"].min().date()
         max_date = registros["Fecha"].max().date()
-        date_range = st.date_input(
-            "Rango de fechas",
-            value=(min_date, max_date),
-            min_value=min_date,
-            max_value=max_date,
-            label_visibility="collapsed",
-        )
+        with st.container(border=True):
+            card_title("Periodo")
+            date_range = st.date_input(
+                "Rango de fechas",
+                value=(min_date, max_date),
+                min_value=min_date,
+                max_value=max_date,
+                label_visibility="collapsed",
+            )
         if isinstance(date_range, tuple) and len(date_range) == 2:
             start, end = date_range
             registros = registros[
@@ -113,20 +116,23 @@ with st.sidebar:
             ]
 
     if "Operario" in registros.columns:
-        filtro_label("Equipo")
         operarios = sorted(registros["Operario"].dropna().unique())
-        selected = st.multiselect(
-            "Operario",
-            operarios,
-            default=operarios,
-            label_visibility="collapsed",
-            placeholder="Todos los operarios",
-        )
+        with st.container(border=True):
+            card_title("Equipo")
+            selected = st.multiselect(
+                "Operario",
+                operarios,
+                default=operarios,
+                label_visibility="collapsed",
+                placeholder="Todos los operarios",
+            )
         registros = registros[registros["Operario"].isin(selected)]
 
-    st.divider()
-    st.caption(f"**{len(registros):,}** pedidos en el reporte")
-    if st.button("Restablecer filtros", use_container_width=True, type="secondary"):
+    st.markdown(
+        f'<div class="sidebar-count">{len(registros):,} pedidos en el reporte</div>',
+        unsafe_allow_html=True,
+    )
+    if st.button("Restablecer filtros", type="tertiary"):
         st.session_state.clear()
         st.rerun()
 
