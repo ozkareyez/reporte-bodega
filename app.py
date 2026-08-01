@@ -6,7 +6,6 @@ from data_utils import build_kpis, clean_citas, clean_despachos, clean_registros
 
 st.set_page_config(
     page_title="Reporte de Pedidos",
-    page_icon="📦",
     layout="wide",
 )
 
@@ -63,7 +62,7 @@ col4.metric("Devolución", f"{kpis['pct_devolucion']:.2f}%")
 st.divider()
 
 tab_productividad, tab_clientes, tab_rutas, tab_tendencia, tab_cumplimiento, tab_novedades, tab_datos = st.tabs(
-    ["👷 Productividad", "🧑‍💼 Clientes", "🚚 Rutas y vehículos", "📈 Tendencia", "🕒 Cumplimiento", "⚠️ Novedades", "📋 Datos"]
+    ["Productividad", "Clientes", "Rutas y vehículos", "Tendencia", "Cumplimiento", "Novedades", "Datos"]
 )
 
 # ---------- Productividad por operario ----------

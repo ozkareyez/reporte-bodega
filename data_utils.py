@@ -70,6 +70,9 @@ def clean_registros(df: pd.DataFrame) -> pd.DataFrame:
         if col in df.columns:
             df[f"{col}_min"] = df[col].apply(parse_time_to_minutes)
 
+    if "Kg despachados" in df.columns:
+        df["Kg"] = df["Kg despachados"]
+
     if "Fecha" in df.columns:
         df["Fecha"] = pd.to_datetime(df["Fecha"], errors="coerce")
 
