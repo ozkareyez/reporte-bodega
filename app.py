@@ -28,13 +28,83 @@ despachos = clean_despachos(sheets.get("Despachos", pd.DataFrame()))
 
 # ---------- Filtros ----------
 with st.sidebar:
-    st.header("Filtros")
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"] {
+            background: #f8f9fb;
+            border-right: 1px solid #e6e8ee;
+        }
+        [data-testid="stSidebar"] > div:first-child {
+            padding-top: 1.25rem;
+        }
+        .sidebar-brand {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #111827;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .sidebar-brand-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #2563eb;
+            display: inline-block;
+        }
+        .sidebar-sub {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 0.2rem;
+        }
+        .filtro-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #9ca3af;
+            margin: 1.1rem 0 0.35rem 0;
+        }
+        [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        [data-testid="stSidebar"] [data-testid="stDateInput"] input,
+        [data-testid="stSidebar"] [data-testid="stMultiSelect"] [data-baseweb="select"] {
+            border-radius: 6px;
+            border-color: #d1d5db;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        '<div class="sidebar-brand"><span class="sidebar-brand-dot"></span>Reporte de Pedidos</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="sidebar-sub">Bodega Murano &middot; Filtros del reporte</div>',
+        unsafe_allow_html=True,
+    )
+    st.divider()
+
+    def filtro_label(texto: str) -> None:
+        st.markdown(f'<div class="filtro-label">{texto}</div>', unsafe_allow_html=True)
 
     if "Fecha" in registros.columns and registros["Fecha"].notna().any():
+        filtro_label("Periodo")
         min_date = registros["Fecha"].min().date()
         max_date = registros["Fecha"].max().date()
         date_range = st.date_input(
-            "Rango de fechas", value=(min_date, max_date), min_value=min_date, max_value=max_date
+            "Rango de fechas",
+            value=(min_date, max_date),
+            min_value=min_date,
+            max_value=max_date,
+            label_visibility="collapsed",
         )
         if isinstance(date_range, tuple) and len(date_range) == 2:
             start, end = date_range
@@ -43,9 +113,22 @@ with st.sidebar:
             ]
 
     if "Operario" in registros.columns:
+        filtro_label("Equipo")
         operarios = sorted(registros["Operario"].dropna().unique())
-        selected = st.multiselect("Operario", operarios, default=operarios)
+        selected = st.multiselect(
+            "Operario",
+            operarios,
+            default=operarios,
+            label_visibility="collapsed",
+            placeholder="Todos los operarios",
+        )
         registros = registros[registros["Operario"].isin(selected)]
+
+    st.divider()
+    st.caption(f"**{len(registros):,}** pedidos en el reporte")
+    if st.button("Restablecer filtros", use_container_width=True, type="secondary"):
+        st.session_state.clear()
+        st.rerun()
 
 # ---------- KPIs ----------
 kpis = build_kpis(registros)
