@@ -1,0 +1,16 @@
+# Datos reales (no subir a un repo, aunque sea privado)
+*.xlsx
+*.xls
+!data/*.sample.xlsx
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS
+.DS_Store
