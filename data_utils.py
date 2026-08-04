@@ -13,6 +13,8 @@ import streamlit as st
 
 SHEETS = ["Registros", "Despachos", "Descargues", "Citas", "Resumen"]
 
+TIPO_ORDER = ["MASIVO", "VENTA DIRECTA"]
+
 TIME_PATTERN = re.compile(r"(?:(\d+)h)?\s*(?:(\d+)m)?")
 
 
@@ -62,6 +64,8 @@ def clean_registros(df: pd.DataFrame) -> pd.DataFrame:
         df["Cliente"] = df["Cliente"].apply(normalize_text)
     if "Operario" in df.columns:
         df["Operario"] = df["Operario"].apply(normalize_text)
+    if "Tipo" in df.columns:
+        df["Tipo"] = df["Tipo"].apply(normalize_text)
 
     if "Eficiencia" in df.columns:
         df["Eficiencia_num"] = df["Eficiencia"].apply(parse_percent)
@@ -128,3 +132,137 @@ def build_kpis(registros: pd.DataFrame) -> dict:
         "devolucion_total": devolucion_total,
         "pct_devolucion": pct_devolucion,
     }
+
+
+def _es_novedad(series) -> pd.Series:
+    return series.astype(str).str.strip().str.lower() == "sí"
+
+
+def _tipo_stats(df: pd.DataFrame) -> pd.DataFrame:
+    """Métricas comparativas por tipo de pedido (Masivo / Venta Directa)."""
+    g = df.groupby("Tipo")
+    stats = pd.DataFrame(
+        {
+            "Pedidos": g.size(),
+            "Kg total": g["Kg"].sum(),
+            "Kg promedio": g["Kg"].mean(),
+            "Devolución kg": g["Devolución kg"].sum(),
+            "Devolución %": g.apply(
+                lambda x: x["Devolución kg"].sum() / x["Kg"].sum() * 100
+            ),
+        }
+    )
+    if "Eficiencia_num" in df.columns:
+        stats["Eficiencia %"] = g["Eficiencia_num"].mean()
+    if "Tiempo alistamiento_min" in df.columns:
+        stats["Alistamiento (min)"] = g["Tiempo alistamiento_min"].mean()
+    if "Tiempo cargue_min" in df.columns:
+        stats["Cargue (min)"] = g["Tiempo cargue_min"].mean()
+    if "Novedad cargue" in df.columns:
+        stats["Novedades"] = g["Novedad cargue"].apply(
+            lambda s: _es_novedad(s).sum()
+        )
+    if "Días retraso" in df.columns:
+        stats["Días retraso prom"] = g["Días retraso"].mean()
+    return stats
+
+
+def build_tipo_analysis(df: pd.DataFrame) -> dict | None:
+    """Reporte comparativo Masivo vs Venta Directa. None si no hay columna Tipo."""
+    if "Tipo" not in df.columns or df["Tipo"].dropna().empty:
+        return None
+
+    d = df.dropna(subset=["Tipo"]).copy()
+    tipos = [t for t in TIPO_ORDER if t in d["Tipo"].unique()]
+    if not tipos:
+        return None
+
+    stats = _tipo_stats(d).reindex(tipos).dropna(how="all")
+    pedidos_total = len(d)
+
+    resumen = {
+        "tipos": tipos,
+        "stats": stats,
+        "distribucion_pedidos": (stats["Pedidos"] / pedidos_total * 100),
+        "total_pedidos": pedidos_total,
+        "total_kg": stats["Kg total"].sum(),
+    }
+
+    if "Semana" in d.columns and "Kg" in d.columns:
+        trend = (
+            d.groupby(["Semana", "Tipo"])["Kg"]
+            .sum()
+            .unstack(fill_value=0)
+            .reindex(columns=tipos, fill_value=0)
+        )
+        resumen["trend_kg"] = trend
+
+    if "Cliente" in d.columns:
+        top = (
+            d.groupby(["Cliente", "Tipo"])["Kg"]
+            .sum()
+            .reset_index()
+            .sort_values("Kg", ascending=False)
+        )
+        resumen["top_clientes"] = top
+
+    if "Operario" in d.columns:
+        by_operario = (
+            d.groupby(["Operario", "Tipo"])
+            .agg(Kg=("Kg", "sum"), Pedidos=("Kg", "count"))
+            .reset_index()
+        )
+        resumen["by_operario"] = by_operario
+
+    resumen["insights"] = _tipo_insights(d, stats, tipos)
+    return resumen
+
+
+def _tipo_insights(df: pd.DataFrame, stats: pd.DataFrame, tipos: list) -> list[str]:
+    """Observaciones en lenguaje natural para el informe ejecutivo."""
+    insights = []
+
+    mayor_vol = stats["Kg total"].idxmax()
+    menor_vol = stats["Kg total"].idxmin()
+    insights.append(
+        f"{mayor_vol} concentra el mayor volumen de carga con "
+        f"{stats.loc[mayor_vol, 'Kg total']:,.0f} kg, superando a {menor_vol} "
+        f"({stats.loc[menor_vol, 'Kg total']:,.0f} kg)."
+    )
+
+    mayor_ped = stats["Pedidos"].idxmax()
+    insights.append(
+        f"{mayor_ped} genera más pedidos ({stats.loc[mayor_ped, 'Pedidos']:,.0f}), "
+        f"mientras que {stats['Pedidos'].idxmin()} pedidos promedio "
+        f"({stats.loc[stats['Pedidos'].idxmin(), 'Kg promedio']:,.0f} kg/pedido) "
+        f"son de mayor tamaño."
+    )
+
+    if "Devolución %" in stats.columns:
+        tipo_dev = stats["Devolución %"].idxmax()
+        insights.append(
+            f"{tipo_dev} concentra las devoluciones con "
+            f"{stats.loc[tipo_dev, 'Devolución %']:.1f}% de su peso devuelto "
+            f"({stats.loc[tipo_dev, 'Devolución kg']:,.0f} kg), frente a "
+            f"{stats['Devolución %'].min():.1f}% de {stats['Devolución %'].idxmin()}."
+        )
+
+    if "Eficiencia %" in stats.columns:
+        tipo_ef = stats["Eficiencia %"].idxmax()
+        insights.append(
+            f"{tipo_ef} alcanza una eficiencia promedio de "
+            f"{stats.loc[tipo_ef, 'Eficiencia %']:.0f}% vs "
+            f"{stats.loc[stats['Eficiencia %'].idxmin(), 'Eficiencia %']:.0f}% de "
+            f"{stats['Eficiencia %'].idxmin()}."
+        )
+
+    if "Novedades" in stats.columns:
+        tipo_nov = stats["Novedades"].idxmax()
+        insights.append(
+            f"Las novedades de cargue se concentran en {tipo_nov} "
+            f"({stats.loc[tipo_nov, 'Novedades']:,.0f} casos) y representan el "
+            f"{stats.loc[tipo_nov, 'Novedades'] / max(stats['Novedades'].sum(), 1) * 100:.0f}% "
+            f"del total."
+        )
+
+    return insights
