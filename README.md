@@ -54,6 +54,9 @@ git push -u origin main
 
 ## Secciones del dashboard
 
+- **Tipos de pedido**: comparativa profesional **Masivo vs Venta Directa**
+  (pedidos, kg totales, tamaño promedio, eficiencia, devoluciones, novedades,
+  tendencia semanal, top clientes y resumen ejecutivo).
 - **Productividad**: kg y eficiencia por operario.
 - **Clientes**: ranking de clientes por volumen, clientes con más novedades.
 - **Rutas y vehículos**: kg y tiempo de cargue por ruta, kg por placa.
@@ -61,6 +64,9 @@ git push -u origin main
 - **Cumplimiento**: % de citas a tiempo, distribución de retrasos.
 - **Novedades**: pedidos con devoluciones/novedades de cargue.
 - **Datos**: tabla cruda filtrada, descargable en CSV.
+
+La interfaz usa la paleta corporativa de Italcol Mascotas (`#FF5C00`,
+`#5636D1`, `#E2498A`, `#F4AA19`).
 
 ## Próximos pasos (ver PRD)
 

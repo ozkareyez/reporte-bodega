@@ -19,6 +19,8 @@ streamlit run app.py              # http://localhost:8501
 ## Quirks that matter when editing
 
 - Column names are accented Spanish strings and must match **exactly** (e.g. `Devolución kg`, `Novedad cargue`, `Días retraso`, `Tiempo cargue_min`, `Eficiencia_num`). Code guards column presence with `if "X" in df.columns` before use — keep that pattern.
+- `Registros` may contain a `Tipo` column whose values are `MASIVO` / `VENTA DIRECTA` (normalized by `clean_registros`). The comparison report lives in `build_tipo_analysis` (data) and the `tab_tipos` section of `app.py` (UI). Not all workbooks have this column; every code path must handle its absence.
+- Brand colors (from italcolmascotas.com) are defined as constants at the top of `app.py` (`ORANGE`, `VIOLET`, `PINK`, `GOLD`, `DARK`) and reused by charts via `style_fig`. Keep all UI styling in `app.py`.
 - `clean_registros` adds derived numeric columns (`Eficiencia_num`, `<col>_min`) parsed from messy formats: `"174.84%"` and `"1h 19m"`. Don't rename these.
 - Text columns are normalized via `normalize_text` (uppercase, collapsed spaces); aggregations rely on that.
 - `load_workbook` is wrapped in `@st.cache_data`, so it returns a fresh dict each call but cached by file — don't mutate the returned DataFrames in place.

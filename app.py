@@ -78,6 +78,33 @@ with st.sidebar:
             font-family: 'Poppins', 'Segoe UI', sans-serif;
         }}
 
+        /* Títulos y enlaces siempre visibles (aunque el navegador use tema oscuro) */
+        h1, h2, h3, h4, h5, h6,
+        [data-testid="stMarkdownContainer"] h1,
+        [data-testid="stMarkdownContainer"] h2,
+        [data-testid="stMarkdownContainer"] h3,
+        [data-testid="stMarkdownContainer"] h4,
+        [data-testid="stMarkdownContainer"] h5,
+        [data-testid="stMarkdownContainer"] h6 {{
+            color: #1F2430 !important;
+        }}
+        [data-testid="stCaptionContainer"],
+        [data-testid="stCaptionContainer"] p {{
+            color: #6B7280 !important;
+        }}
+        a {{
+            color: {ORANGE} !important;
+        }}
+        a:hover {{
+            color: {PINK} !important;
+        }}
+        label, [data-testid="stWidgetLabel"] p {{
+            color: #374151 !important;
+        }}
+        [data-testid="stAlert"] p {{
+            color: #1F2430 !important;
+        }}
+
         .stApp {{
             background: linear-gradient(180deg, #FFFCFA 0%, #FFFFFF 260px);
         }}
@@ -141,6 +168,10 @@ with st.sidebar:
             border-radius: 999px 999px 0 0;
             padding: 0.55rem 1.1rem;
             font-weight: 500;
+            color: #6B7280;
+        }}
+        [data-testid="stTabs"] [data-baseweb="tab"]:hover {{
+            color: {ORANGE};
         }}
         [data-testid="stTabs"] [aria-selected="true"] {{
             background: {BG_SOFT};
@@ -169,6 +200,24 @@ with st.sidebar:
         }}
         [data-testid="stMetricDelta"] {{
             font-size: 0.8rem;
+        }}
+
+        /* Tablas de datos con la línea visual de la página */
+        [data-testid="stDataFrame"] {{
+            border: 1px solid #ECECEF;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(31,36,48,0.04);
+        }}
+        [data-testid="stDataFrame"] [data-testid="stElementToolbar"] {{
+            border-bottom: 1px solid #ECECEF;
+            background: #FAFAFB;
+            border-radius: 12px 12px 0 0;
+        }}
+        [data-testid="stDataFrame"] [data-testid="stColumnHeader"] {{
+            background: #FAFAFB;
+            font-weight: 600;
+            color: #1F2430;
         }}
 
         /* Botones */
@@ -433,7 +482,7 @@ with tab_tipos:
                 textfont=dict(color="white", size=12),
                 marker=dict(colors=[TYPE_COLORS[t] for t in tipos], line=dict(color="white", width=2)),
             )
-            st.plotly_chart(style_fig(fig_donut), use_container_width=True)
+            st.plotly_chart(style_fig(fig_donut), width="stretch")
 
         with c2:
             kg_total = stats.reset_index().rename(columns={"index": "Tipo"})
@@ -451,7 +500,7 @@ with tab_tipos:
                 showlegend=False,
                 yaxis=dict(range=[0, stats["Kg total"].max() * 1.18]),
             )
-            st.plotly_chart(style_fig(fig_kg), use_container_width=True)
+            st.plotly_chart(style_fig(fig_kg), width="stretch")
 
         # --- Segunda fila: tamaño promedio, eficiencia y devolución ---
         c1, c2, c3 = st.columns(3)
@@ -466,7 +515,7 @@ with tab_tipos:
                 marker_line_width=0, width=0.5, showlegend=False,
             )
             fig_prom.update_layout(yaxis_title="Kg", showlegend=False)
-            st.plotly_chart(style_fig(fig_prom), use_container_width=True)
+            st.plotly_chart(style_fig(fig_prom), width="stretch")
 
         with c2:
             if "Eficiencia %" in stats:
@@ -480,7 +529,7 @@ with tab_tipos:
                     marker_line_width=0, width=0.5, showlegend=False,
                 )
                 fig_ef.update_layout(yaxis_title="%", showlegend=False)
-                st.plotly_chart(style_fig(fig_ef), use_container_width=True)
+                st.plotly_chart(style_fig(fig_ef), width="stretch")
 
         with c3:
             if "Devolución %" in stats:
@@ -494,7 +543,7 @@ with tab_tipos:
                     marker_line_width=0, width=0.5, showlegend=False,
                 )
                 fig_dev.update_layout(yaxis_title="%", showlegend=False)
-                st.plotly_chart(style_fig(fig_dev), use_container_width=True)
+                st.plotly_chart(style_fig(fig_dev), width="stretch")
 
         # --- Tendencia semanal apilada por tipo ---
         if "trend_kg" in tipo:
@@ -514,7 +563,7 @@ with tab_tipos:
                 yaxis_title="Kg",
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
             )
-            st.plotly_chart(style_fig(fig_trend), use_container_width=True)
+            st.plotly_chart(style_fig(fig_trend), width="stretch")
 
         # --- Top clientes por tipo ---
         if "top_clientes" in tipo:
@@ -533,7 +582,7 @@ with tab_tipos:
                         f'<b style="font-size:0.85rem;">{t.title()}</b></div>',
                         unsafe_allow_html=True,
                     )
-                    st.dataframe(top, use_container_width=True, hide_index=True)
+                    st.dataframe(top, width="stretch", hide_index=True)
 
         # --- Tabla comparativa completa y descarga ---
         st.markdown("### Tabla comparativa completa")
@@ -552,7 +601,7 @@ with tab_tipos:
         if "Días retraso prom" in tabla.columns:
             tabla["Días retraso prom"] = tabla["Días retraso prom"].map(lambda v: f"{v:.1f} días")
 
-        st.dataframe(tabla, use_container_width=True)
+        st.dataframe(tabla, width="stretch")
         st.download_button(
             "Descargar comparativa (CSV)",
             tipo["stats"].to_csv(sep=";").encode("utf-8-sig"),
@@ -579,7 +628,7 @@ with tab_productividad:
             fig_kg = px.bar(
                 by_operario, x="Operario", y="Kg", title="Kg despachados por operario"
             )
-            st.plotly_chart(style_fig(fig_kg), use_container_width=True)
+            st.plotly_chart(style_fig(fig_kg), width="stretch")
         with c2:
             fig_ef = px.bar(
                 by_operario,
@@ -587,9 +636,9 @@ with tab_productividad:
                 y="Eficiencia",
                 title="Eficiencia promedio por operario (%)",
             )
-            st.plotly_chart(style_fig(fig_ef), use_container_width=True)
+            st.plotly_chart(style_fig(fig_ef), width="stretch")
 
-        st.dataframe(by_operario, use_container_width=True, hide_index=True)
+        st.dataframe(by_operario, width="stretch", hide_index=True)
     else:
         st.info("No hay datos de operarios en el rango/filtro seleccionado.")
 
@@ -614,7 +663,7 @@ with tab_clientes:
             top_clientes, x="Cliente", y="Kg", title=f"Top {top_n} clientes por kg"
         )
         fig_top.update_layout(xaxis_tickangle=-45)
-        st.plotly_chart(style_fig(fig_top), use_container_width=True)
+        st.plotly_chart(style_fig(fig_top), width="stretch")
 
         if "Novedad cargue" in registros.columns:
             novedades_cliente = (
@@ -627,10 +676,10 @@ with tab_clientes:
             )
             if not novedades_cliente.empty:
                 st.subheader("Clientes con más novedades de cargue")
-                st.dataframe(novedades_cliente, use_container_width=True, hide_index=True)
+                st.dataframe(novedades_cliente, width="stretch", hide_index=True)
 
         st.subheader("Detalle por cliente")
-        st.dataframe(by_cliente, use_container_width=True, hide_index=True)
+        st.dataframe(by_cliente, width="stretch", hide_index=True)
     else:
         st.info("No hay datos de clientes en el rango/filtro seleccionado.")
 
@@ -654,7 +703,7 @@ with tab_rutas:
                 by_ruta.head(15), x="Ruta", y="Kg", title="Kg despachados por ruta (top 15)"
             )
             fig_kg_ruta.update_layout(xaxis_tickangle=-45)
-            st.plotly_chart(style_fig(fig_kg_ruta), use_container_width=True)
+            st.plotly_chart(style_fig(fig_kg_ruta), width="stretch")
         with c2:
             fig_tiempo_ruta = px.bar(
                 by_ruta.sort_values("Tiempo_cargue_prom_min", ascending=False).head(15),
@@ -663,7 +712,7 @@ with tab_rutas:
                 title="Tiempo de cargue promedio por ruta (min, top 15)",
             )
             fig_tiempo_ruta.update_layout(xaxis_tickangle=-45)
-            st.plotly_chart(style_fig(fig_tiempo_ruta), use_container_width=True)
+            st.plotly_chart(style_fig(fig_tiempo_ruta), width="stretch")
 
         if "Placa" in despachos.columns:
             by_placa = (
@@ -673,10 +722,10 @@ with tab_rutas:
                 .sort_values("Kg", ascending=False)
             )
             st.subheader("Kg despachados por vehículo (placa)")
-            st.dataframe(by_placa, use_container_width=True, hide_index=True)
+            st.dataframe(by_placa, width="stretch", hide_index=True)
 
         st.subheader("Detalle por ruta")
-        st.dataframe(by_ruta, use_container_width=True, hide_index=True)
+        st.dataframe(by_ruta, width="stretch", hide_index=True)
     else:
         st.info("La hoja 'Despachos' no tiene datos suficientes para este reporte.")
 
@@ -699,7 +748,7 @@ with tab_tendencia:
             fig_kg_semana = px.line(
                 by_semana, x="Semana", y="Kg", markers=True, title="Kg despachados por semana"
             )
-            st.plotly_chart(style_fig(fig_kg_semana), use_container_width=True)
+            st.plotly_chart(style_fig(fig_kg_semana), width="stretch")
         with c2:
             fig_ef_semana = px.line(
                 by_semana,
@@ -708,9 +757,9 @@ with tab_tendencia:
                 markers=True,
                 title="Eficiencia promedio por semana (%)",
             )
-            st.plotly_chart(style_fig(fig_ef_semana), use_container_width=True)
+            st.plotly_chart(style_fig(fig_ef_semana), width="stretch")
 
-        st.dataframe(by_semana, use_container_width=True, hide_index=True)
+        st.dataframe(by_semana, width="stretch", hide_index=True)
     else:
         st.info("No hay columna 'Semana' disponible para calcular la tendencia.")
 
@@ -723,8 +772,8 @@ with tab_cumplimiento:
         fig_retraso = px.histogram(
             citas, x="Retraso (min)", title="Distribución de retraso en citas (min)"
         )
-        st.plotly_chart(style_fig(fig_retraso), use_container_width=True)
-        st.dataframe(citas, use_container_width=True, hide_index=True)
+        st.plotly_chart(style_fig(fig_retraso), width="stretch")
+        st.dataframe(citas, width="stretch", hide_index=True)
     else:
         st.info("La hoja 'Citas' no tiene datos suficientes para este reporte.")
 
@@ -732,7 +781,7 @@ with tab_cumplimiento:
         fig_dias = px.histogram(
             registros, x="Días retraso", title="Días de retraso en pedidos (Registros)"
         )
-        st.plotly_chart(style_fig(fig_dias), use_container_width=True)
+        st.plotly_chart(style_fig(fig_dias), width="stretch")
 
 # ---------- Novedades ----------
 with tab_novedades:
@@ -754,13 +803,13 @@ with tab_novedades:
             ]
             if c in novedades.columns
         ]
-        st.dataframe(novedades[cols_mostrar], use_container_width=True, hide_index=True)
+        st.dataframe(novedades[cols_mostrar], width="stretch", hide_index=True)
     else:
         st.info("No se encontraron columnas de novedades en los datos.")
 
 # ---------- Datos crudos ----------
 with tab_datos:
-    st.dataframe(registros, use_container_width=True, hide_index=True)
+    st.dataframe(registros, width="stretch", hide_index=True)
     st.download_button(
         "Descargar datos filtrados (CSV)",
         registros.to_csv(index=False).encode("utf-8"),
